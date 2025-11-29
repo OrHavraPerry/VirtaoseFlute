@@ -1,0 +1,5 @@
+{
+  "name": "Virtuoso Flute Companion",
+  "description": "An interactive backing track and visual aid tool for classical flute players. Select a scale, hear a piano backing track, and view real-time fingering charts.",
+  "requestFramePermissions": []
+}
