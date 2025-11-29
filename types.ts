@@ -110,6 +110,13 @@ export interface RhythmPattern {
     hihat: StepValue[];
     bass: StepValue[]; 
     chord: StepValue[];
+    // Optional percussion for specific styles
+    clave?: StepValue[];
+    cowbell?: StepValue[];
+    shaker?: StepValue[];
+    conga?: StepValue[];
+    rimshot?: StepValue[];
+    clap?: StepValue[];
     name?: string;
 }
 

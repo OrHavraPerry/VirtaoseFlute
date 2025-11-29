@@ -23,6 +23,14 @@ const PROGRESSION_MAPS: Record<ProgressionType, number[]> = {
   [ProgressionType.Custom]: [0, 0, 0, 0] 
 };
 
+// Swing amounts per rhythm type (0 = straight, 0.33 = triplet swing)
+const SWING_AMOUNTS: Partial<Record<RhythmType, number>> = {
+  [RhythmType.JazzSwing]: 0.25,
+  [RhythmType.HipHop]: 0.15,
+  [RhythmType.RnB]: 0.12,
+  [RhythmType.BossaNova]: 0.08,
+};
+
 class AudioService {
   private ctx: AudioContext | null = null;
   private isPlaying: boolean = false;
@@ -44,9 +52,20 @@ class AudioService {
   private customRhythm: RhythmPattern = RHYTHM_PATTERNS[RhythmType.Standard];
   private chordsEnabled: boolean = true;
 
+  // Per-bus gain nodes for better mixing
+  private masterGain: GainNode | null = null;
+  private drumBus: GainNode | null = null;
+  private percBus: GainNode | null = null;  // Separate bus for percussion
+  private bassBus: GainNode | null = null;
+  private chordBus: GainNode | null = null;
+  
+  // Simple reverb for depth
+  private reverbNode: ConvolverNode | null = null;
+  private reverbGain: GainNode | null = null;
+  
   // Instruments
-  private gainNode: GainNode | null = null;
   private drums: DrumMachine | null = null;
+  private perc: DrumMachine | null = null;  // Separate percussion instance
   private piano: PolySynth | null = null;
   private bass: MonoSynth | null = null;
 
@@ -64,17 +83,70 @@ class AudioService {
   private init() {
     if (!this.ctx) {
       this.ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
-      this.gainNode = this.ctx.createGain();
-      this.gainNode.connect(this.ctx.destination);
-      this.gainNode.gain.value = 0.4; // Master volume
+      
+      // Master gain for overall volume control
+      this.masterGain = this.ctx.createGain();
+      this.masterGain.gain.value = 0.7;
+      this.masterGain.connect(this.ctx.destination);
+      
+      // Create simple reverb
+      this.reverbGain = this.ctx.createGain();
+      this.reverbGain.gain.value = 0.15; // Subtle reverb
+      this.reverbGain.connect(this.masterGain);
+      this.createReverb();
+      
+      // Per-bus gains for better mixing balance
+      this.drumBus = this.ctx.createGain();
+      this.drumBus.gain.value = 0.8;
+      this.drumBus.connect(this.masterGain);
+      
+      // Separate percussion bus (slightly lower, more reverb)
+      this.percBus = this.ctx.createGain();
+      this.percBus.gain.value = 0.6;
+      this.percBus.connect(this.masterGain);
+      if (this.reverbGain) this.percBus.connect(this.reverbGain);
+      
+      this.bassBus = this.ctx.createGain();
+      this.bassBus.gain.value = 0.7;
+      this.bassBus.connect(this.masterGain);
+      
+      this.chordBus = this.ctx.createGain();
+      this.chordBus.gain.value = 0.5;
+      this.chordBus.connect(this.masterGain);
+      if (this.reverbGain) this.chordBus.connect(this.reverbGain);
 
-      this.drums = new DrumMachine(this.ctx, this.gainNode);
-      this.piano = new PolySynth(this.ctx, this.gainNode);
-      this.bass = new MonoSynth(this.ctx, this.gainNode);
+      // Create instruments with their respective buses
+      this.drums = new DrumMachine(this.ctx, this.drumBus);
+      this.piano = new PolySynth(this.ctx, this.chordBus);
+      this.bass = new MonoSynth(this.ctx, this.bassBus);
+      
+      // Create percussion instrument on separate bus
+      this.perc = new DrumMachine(this.ctx, this.percBus!);
     }
     if (this.ctx.state === 'suspended') {
       this.ctx.resume();
     }
+  }
+  
+  // Create a simple algorithmic reverb impulse
+  private createReverb() {
+    if (!this.ctx || !this.reverbGain) return;
+    
+    const sampleRate = this.ctx.sampleRate;
+    const length = sampleRate * 1.5; // 1.5 second reverb
+    const impulse = this.ctx.createBuffer(2, length, sampleRate);
+    
+    for (let channel = 0; channel < 2; channel++) {
+      const channelData = impulse.getChannelData(channel);
+      for (let i = 0; i < length; i++) {
+        // Exponential decay with some randomness
+        channelData[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / length, 2.5);
+      }
+    }
+    
+    this.reverbNode = this.ctx.createConvolver();
+    this.reverbNode.buffer = impulse;
+    this.reverbNode.connect(this.reverbGain);
   }
 
   private getActiveRhythmPattern(): RhythmPattern {
@@ -117,14 +189,45 @@ class AudioService {
     this.timerID = window.setTimeout(() => this.schedule(), 25);
   }
 
+  // Calculate swing offset for a given step
+  private getSwingOffset(step: number): number {
+    const swingAmount = SWING_AMOUNTS[this.rhythm] || 0;
+    if (swingAmount === 0) return 0;
+    
+    // Apply swing to off-beat 16ths (steps 1, 3, 5, 7, 9, 11, 13, 15)
+    if (step % 2 === 1) {
+      const secondsPerBeat = 60.0 / this.tempo;
+      const secondsPerStep = secondsPerBeat / 4;
+      return secondsPerStep * swingAmount;
+    }
+    return 0;
+  }
+
+  // Get velocity based on step position (accents on strong beats)
+  private getStepVelocity(step: number): number {
+    // Downbeat (step 0) is strongest
+    if (step === 0) return 1.0;
+    // Beat 3 (step 8) is also strong
+    if (step === 8) return 0.95;
+    // Beats 2 and 4 (steps 4, 12) are medium
+    if (step === 4 || step === 12) return 0.85;
+    // Off-beats are softer
+    if (step % 4 === 0) return 0.8;
+    // 16th notes are softest
+    return 0.7;
+  }
+
   private playStep(time: number, step: number, bar: number) {
-    if (!this.ctx || !this.drums || !this.piano || !this.bass) return;
+    if (!this.ctx || !this.drums || !this.piano || !this.bass || !this.perc) return;
 
     const pattern = this.getActiveRhythmPattern();
     const progressionIndices = this.getActiveProgression();
     
+    // Apply swing timing
+    const swungTime = time + this.getSwingOffset(step);
+    const velocity = this.getStepVelocity(step);
+    
     // Calculate current chord based on Bar number
-    // Fallback to avoid undefined access
     const chordIndex = bar % (progressionIndices.length || 1);
     const rootScaleDegree = progressionIndices[chordIndex] || 0;
 
@@ -133,10 +236,8 @@ class AudioService {
 
     // Sync Visuals: Notify on the first step of the bar (Downbeat)
     if (step === 0) {
-        // Convert note names back to scale indices for the UI
         const indices = triadNotes.map(noteName => scaleNotes.indexOf(noteName));
         
-        // Dispatch slightly in future to match audio
         const delay = (time - this.ctx.currentTime) * 1000;
         setTimeout(() => {
             if (this.isPlaying) {
@@ -145,28 +246,40 @@ class AudioService {
         }, Math.max(0, delay));
     }
 
-    // --- DRUMS ---
-    if (pattern.kick[step]) this.drums.playKick(time);
-    if (pattern.snare[step]) this.drums.playSnare(time);
-    if (pattern.hihat[step]) this.drums.playHiHat(time, step % 4 === 2); // Open hat on off-beat slightly?
+    // --- DRUMS (with velocity and swing) ---
+    if (pattern.kick[step]) this.drums.playKick(swungTime, velocity);
+    if (pattern.snare[step]) this.drums.playSnare(swungTime, velocity);
+    if (pattern.hihat[step]) {
+        const isOpen = step % 4 === 2;
+        // Hi-hats get slightly lower velocity for groove
+        this.drums.playHiHat(swungTime, isOpen, velocity * 0.9);
+    }
+    
+    // --- PERCUSSION (style-specific, on separate bus with reverb) ---
+    if (pattern.clave?.[step]) this.perc.playClave(swungTime, velocity);
+    if (pattern.cowbell?.[step]) this.perc.playCowbell(swungTime, velocity * 0.8);
+    if (pattern.shaker?.[step]) this.perc.playShaker(swungTime, velocity * 0.6);
+    if (pattern.conga?.[step]) {
+        const isHigh = step % 8 < 4;
+        this.perc.playConga(swungTime, isHigh, velocity * 0.85);
+    }
+    if (pattern.rimshot?.[step]) this.perc.playRimshot(swungTime, velocity);
+    if (pattern.clap?.[step]) this.perc.playClap(swungTime, velocity);
 
-    // --- BASS ---
+    // --- BASS (with swing) ---
     if (pattern.bass[step]) {
-        // Simple bass: Play Root of current chord
-        const note = triadNotes[0]; // Root of triad
+        const note = triadNotes[0];
         if (note) {
-            const freq = MusicTheory.getFrequency(`${note}2`); // Low octave
-            // Duration: 16th note
-            this.bass.playBass(freq, time, 0.2); 
+            const freq = MusicTheory.getFrequency(`${note}2`);
+            this.bass.playBass(freq, swungTime, 0.2, velocity);
         }
     }
 
-    // --- CHORDS ---
+    // --- CHORDS (with swing and velocity) ---
     if (this.chordsEnabled && pattern.chord[step]) {
         const freqs = triadNotes.map(n => n ? MusicTheory.getFrequency(`${n}4`) : 0).filter(f => f > 0);
-        // Longer duration for chords usually, unless funk
         if (freqs.length > 0) {
-            this.piano.playChord(freqs, time, 0.4);
+            this.piano.playChord(freqs, swungTime, 0.4, velocity);
         }
     }
   }

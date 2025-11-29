@@ -98,35 +98,42 @@ export const RHYTHM_PATTERNS: Record<RhythmType, RhythmPattern> = {
     snare: [0, 0, 0, 0,  1, 0, 0, 0,  0, 0, 0, 0,  1, 0, 0, 0],
     hihat: [0, 0, 1, 0,  0, 0, 1, 0,  0, 0, 1, 0,  0, 0, 1, 0], // Open hat on 'and'
     bass:  [0, 0, 1, 0,  0, 0, 1, 0,  0, 0, 1, 0,  0, 0, 1, 0], // Octaves feel
-    chord: [1, 0, 0, 0,  0, 0, 0, 0,  1, 0, 0, 0,  0, 0, 0, 0]
+    chord: [1, 0, 0, 0,  0, 0, 0, 0,  1, 0, 0, 0,  0, 0, 0, 0],
+    cowbell: [1, 0, 0, 0,  1, 0, 0, 0,  1, 0, 0, 0,  1, 0, 0, 0], // Classic disco cowbell
+    clap: [0, 0, 0, 0,  1, 0, 0, 0,  0, 0, 0, 0,  1, 0, 0, 0]
   },
   [RhythmType.Techno]: {
     steps: 16,
     beatsPerBar: 4,
     kick:  [1, 0, 0, 0,  1, 0, 0, 0,  1, 0, 0, 0,  1, 0, 0, 0],
-    snare: [0, 0, 0, 0,  1, 0, 0, 0,  0, 0, 0, 0,  1, 0, 0, 0], // Clap usually
+    snare: [0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0], // No snare, use clap
     hihat: [0, 0, 1, 0,  0, 0, 1, 0,  0, 0, 1, 0,  0, 0, 1, 0],
     bass:  [0, 0, 1, 1,  0, 0, 1, 1,  0, 0, 1, 1,  0, 0, 1, 1], // Rolling
-    chord: [1, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0]
+    chord: [1, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0],
+    clap:  [0, 0, 0, 0,  1, 0, 0, 0,  0, 0, 0, 0,  1, 0, 0, 0] // Clap on 2 and 4
   },
   [RhythmType.Reggae]: {
     steps: 16,
     beatsPerBar: 4,
     // One Drop (Kick on 3)
     kick:  [0, 0, 0, 0,  0, 0, 0, 0,  1, 0, 0, 0,  0, 0, 0, 0],
-    snare: [0, 0, 0, 0,  0, 0, 0, 0,  1, 0, 0, 0,  0, 0, 0, 0], // Sidestick with kick
+    snare: [0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0], // No snare, use rimshot
     hihat: [1, 0, 1, 0,  1, 0, 1, 0,  1, 0, 1, 0,  1, 0, 1, 0],
     bass:  [1, 0, 0, 0,  0, 0, 1, 0,  0, 0, 0, 0,  0, 0, 1, 0], // Leaving space
-    chord: [0, 0, 0, 0,  1, 0, 0, 0,  0, 0, 0, 0,  1, 0, 0, 0]  // Skank on 2 and 4
+    chord: [0, 0, 0, 0,  1, 0, 0, 0,  0, 0, 0, 0,  1, 0, 0, 0], // Skank on 2 and 4
+    rimshot: [0, 0, 0, 0,  0, 0, 0, 0,  1, 0, 0, 0,  0, 0, 0, 0] // Sidestick on 3
   },
   [RhythmType.Afrobeat]: {
     steps: 16,
     beatsPerBar: 4,
-    kick:  [1, 0, 0, 0,  0, 0, 1, 0,  0, 0, 0, 0,  1, 0, 0, 0],
-    snare: [0, 0, 0, 0,  1, 0, 0, 0,  0, 0, 1, 0,  0, 0, 0, 0],
-    hihat: [1, 1, 0, 1,  1, 1, 0, 1,  1, 1, 0, 1,  1, 1, 0, 1], // Shaker feel
-    bass:  [1, 0, 0, 1,  0, 0, 1, 0,  1, 0, 1, 0,  0, 1, 0, 0],
-    chord: [1, 0, 0, 0,  0, 0, 1, 0,  1, 0, 0, 0,  0, 0, 1, 0]
+    // Tony Allen style: kick on 1, 1e, 3, 3e - syncopated snare
+    kick:  [1, 1, 0, 0,  0, 0, 0, 0,  1, 1, 0, 0,  0, 0, 0, 0],
+    snare: [0, 0, 0, 0,  1, 0, 0, 1,  0, 0, 0, 0,  1, 0, 0, 0],
+    hihat: [1, 0, 1, 1,  1, 0, 1, 1,  1, 0, 1, 1,  1, 0, 1, 1], // 8th + two 16ths pattern
+    bass:  [1, 0, 0, 0,  0, 0, 1, 0,  1, 0, 0, 0,  0, 0, 1, 0],
+    chord: [0, 0, 1, 0,  0, 0, 0, 1,  0, 0, 1, 0,  0, 0, 0, 1],
+    shaker: [1, 1, 1, 1,  1, 1, 1, 1,  1, 1, 1, 1,  1, 1, 1, 1], // Shekere pattern
+    conga: [0, 0, 1, 0,  1, 0, 0, 1,  0, 0, 1, 0,  1, 0, 0, 1] // Conga tumbao
   },
   [RhythmType.RnB]: {
     steps: 16,
@@ -149,22 +156,27 @@ export const RHYTHM_PATTERNS: Record<RhythmType, RhythmPattern> = {
   [RhythmType.ChaCha]: {
     steps: 16,
     beatsPerBar: 4,
-    // 4-and-1 feel
-    kick:  [1, 0, 0, 0,  1, 0, 0, 0,  1, 0, 1, 0,  1, 0, 0, 0],
-    snare: [0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0], // Cowbell usually
-    hihat: [1, 1, 1, 1,  1, 1, 1, 1,  1, 1, 1, 1,  1, 1, 1, 1], // Guiro
-    bass:  [1, 0, 0, 0,  1, 0, 0, 0,  1, 0, 1, 0,  1, 0, 0, 0],
-    chord: [1, 0, 0, 0,  1, 0, 0, 0,  1, 0, 1, 0,  1, 0, 0, 0]
+    // Authentic Cha-Cha-Chá - "one, two, cha-cha-cha"
+    kick:  [1, 0, 0, 0,  0, 0, 0, 0,  1, 0, 0, 0,  0, 0, 0, 0], // On 1 and 3
+    snare: [0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0], // No snare
+    hihat: [0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0], // Use guiro
+    bass:  [1, 0, 0, 0,  0, 0, 0, 0,  1, 0, 1, 1,  0, 0, 0, 0], // 1, 3, 4-and
+    chord: [0, 0, 0, 0,  1, 0, 0, 0,  0, 0, 1, 1,  0, 0, 0, 0], // 2, 4-and (cha-cha-cha)
+    cowbell: [1, 0, 0, 0,  1, 0, 0, 0,  1, 0, 1, 1,  0, 0, 0, 0], // Cha-cha-cha bell
+    shaker: [1, 0, 1, 0,  1, 0, 1, 0,  1, 0, 1, 0,  1, 0, 1, 0], // Guiro 8ths
+    conga: [0, 0, 0, 1,  0, 0, 0, 1,  0, 0, 0, 1,  0, 0, 0, 1] // Conga slaps
   },
   [RhythmType.Samba]: {
     steps: 16,
     beatsPerBar: 4,
-    // Fast 2/4 feel usually, mapped to 4/4
-    kick:  [1, 0, 0, 1,  0, 0, 1, 0,  1, 0, 0, 1,  0, 0, 1, 0], // Surdo pattern
-    snare: [0, 0, 1, 0,  0, 1, 0, 0,  0, 0, 1, 0,  0, 1, 0, 0],
-    hihat: [1, 1, 1, 1,  1, 1, 1, 1,  1, 1, 1, 1,  1, 1, 1, 1], // Shaker
-    bass:  [1, 0, 0, 1,  0, 0, 1, 0,  1, 0, 0, 1,  0, 0, 1, 0],
-    chord: [0, 1, 0, 1,  0, 1, 0, 1,  0, 1, 0, 1,  0, 1, 0, 1]
+    // Authentic Samba - Surdo pattern with tamborim
+    kick:  [1, 0, 0, 0,  0, 0, 0, 1,  1, 0, 0, 0,  0, 0, 0, 1], // Surdo 1st (marcação)
+    snare: [0, 0, 0, 1,  0, 0, 1, 0,  0, 0, 0, 1,  0, 0, 1, 0], // Caixa pattern
+    hihat: [0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0], // Use shaker
+    bass:  [1, 0, 0, 0,  0, 0, 0, 1,  1, 0, 0, 0,  0, 0, 0, 1],
+    chord: [0, 0, 1, 0,  1, 0, 0, 1,  0, 0, 1, 0,  1, 0, 0, 1], // Cavaquinho strum
+    shaker: [1, 1, 1, 1,  1, 1, 1, 1,  1, 1, 1, 1,  1, 1, 1, 1], // Ganzá 16ths
+    conga: [0, 1, 0, 0,  1, 0, 1, 0,  0, 1, 0, 0,  1, 0, 1, 0] // Tamborim pattern
   },
   [RhythmType.FiveFour]: {
     steps: 20, // 5 beats * 4 steps
@@ -189,20 +201,29 @@ export const RHYTHM_PATTERNS: Record<RhythmType, RhythmPattern> = {
   [RhythmType.BossaNova]: {
     steps: 16,
     beatsPerBar: 4,
-    kick:  [1, 0, 0, 1,  0, 0, 1, 0,  0, 0, 0, 1,  0, 0, 1, 0], // Smooth Bossa Kick
-    snare: [0, 0, 0, 0,  1, 0, 0, 1,  0, 0, 0, 0,  0, 1, 0, 0], // Rim clicks
-    hihat: [1, 1, 1, 1,  1, 1, 1, 1,  1, 1, 1, 1,  1, 1, 1, 1], // Shaker effect
-    bass:  [1, 0, 0, 1,  0, 0, 1, 0,  1, 0, 0, 1,  0, 0, 1, 0],
-    chord: [0, 0, 1, 0,  0, 0, 0, 1,  0, 0, 1, 0,  0, 0, 0, 1]  // Syncopated
+    // Authentic Bossa Nova - João Gilberto style
+    kick:  [1, 0, 0, 0,  0, 0, 1, 0,  0, 0, 1, 0,  0, 0, 0, 0], // Surdo-inspired
+    snare: [0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0], // No snare, use rimshot
+    hihat: [1, 0, 1, 0,  1, 0, 1, 0,  1, 0, 1, 0,  1, 0, 1, 0], // Ganza pattern (8ths)
+    bass:  [1, 0, 0, 0,  0, 0, 1, 0,  0, 0, 1, 0,  0, 0, 0, 0],
+    chord: [1, 0, 0, 1,  0, 0, 1, 0,  0, 1, 0, 0,  1, 0, 0, 0], // Syncopated guitar
+    shaker: [1, 1, 1, 1,  1, 1, 1, 1,  1, 1, 1, 1,  1, 1, 1, 1], // Soft 16th shaker
+    rimshot: [0, 0, 0, 0,  1, 0, 0, 0,  0, 0, 0, 0,  1, 0, 0, 0] // Cross-stick on 2 and 4
   },
   [RhythmType.Salsa]: {
     steps: 16,
     beatsPerBar: 4,
-    kick:  [1, 0, 0, 0,  1, 0, 0, 0,  1, 0, 0, 0,  1, 0, 0, 0], // Pulse
-    snare: [0, 0, 1, 0,  0, 1, 0, 0,  0, 0, 1, 0,  0, 0, 0, 0], // Clave 3-2 approximation triggers
-    hihat: [0, 0, 1, 0,  0, 0, 1, 0,  0, 0, 1, 0,  0, 0, 1, 0], // Cowbell-ish
-    bass:  [0, 0, 0, 1,  0, 0, 0, 1,  0, 0, 0, 1,  0, 0, 0, 1], // Tumbao (on the 4)
-    chord: [0, 1, 0, 0,  0, 1, 0, 0,  0, 1, 0, 0,  0, 1, 0, 0]  // Montuno stabs
+    // Authentic Salsa with Son Clave 3-2
+    kick:  [1, 0, 0, 0,  0, 0, 0, 0,  1, 0, 0, 0,  0, 0, 0, 0], // Light pulse on 1 and 3
+    snare: [0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0], // No snare
+    hihat: [0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0], // Use cowbell
+    bass:  [1, 0, 0, 0,  0, 0, 0, 1,  0, 0, 1, 0,  0, 0, 0, 1], // Tumbao bass
+    chord: [0, 0, 1, 0,  0, 1, 0, 0,  0, 0, 1, 0,  0, 1, 0, 0], // Montuno piano
+    // Son Clave 3-2: X..X..X. | ....X..X (positions 0,3,6 | 12,14 in 16ths)
+    clave: [1, 0, 0, 1,  0, 0, 1, 0,  0, 0, 0, 0,  1, 0, 1, 0],
+    // Cascara/Cowbell pattern
+    cowbell: [1, 0, 1, 0,  1, 0, 1, 0,  0, 0, 1, 0,  1, 0, 1, 0],
+    conga: [0, 0, 1, 0,  1, 0, 0, 1,  0, 0, 1, 0,  1, 0, 0, 1] // Tumbao conga
   },
   [RhythmType.Custom]: {
     steps: 16,

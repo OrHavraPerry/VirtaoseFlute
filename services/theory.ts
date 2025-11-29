@@ -30,15 +30,33 @@ export class MusicTheory {
         });
     }
 
-    static getChordNotes(rootIndex: number, scaleNotes: string[]): string[] {
+    static getChordNotes(rootIndex: number, scaleNotes: string[], includeSeventh: boolean = false): string[] {
         if (!scaleNotes || scaleNotes.length === 0) return [];
 
-        // Simple Triad logic: Root, 3rd, 5th within the scale context
+        // Triad: Root, 3rd, 5th within the scale context
         const idx1 = rootIndex % scaleNotes.length;
         const idx2 = (rootIndex + 2) % scaleNotes.length;
         const idx3 = (rootIndex + 4) % scaleNotes.length;
         
-        return [scaleNotes[idx1], scaleNotes[idx2], scaleNotes[idx3]];
+        const notes = [scaleNotes[idx1], scaleNotes[idx2], scaleNotes[idx3]];
+        
+        // Optionally add 7th for richer harmony
+        if (includeSeventh && scaleNotes.length >= 7) {
+            const idx4 = (rootIndex + 6) % scaleNotes.length;
+            notes.push(scaleNotes[idx4]);
+        }
+        
+        return notes;
+    }
+
+    static getVoicedChord(rootIndex: number, scaleNotes: string[], prevChordNotes: string[] = []): string[] {
+        const chordNotes = this.getChordNotes(rootIndex, scaleNotes);
+        
+        if (prevChordNotes.length === 0) return chordNotes;
+        
+        // Simple voice leading: keep common tones, move others by smallest interval
+        // For now, just return the chord notes (can be enhanced later)
+        return chordNotes;
     }
 
     static getNoteNameFromIndex(index: number, scaleNotes: string[], root: NoteName): string {
