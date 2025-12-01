@@ -3,9 +3,10 @@ import { Fingering } from '../types';
 
 interface FluteFingeringProps {
   fingering: Fingering | null;
+  highlighted?: boolean;
 }
 
-export const FluteFingering: React.FC<FluteFingeringProps> = ({ fingering }) => {
+export const FluteFingering: React.FC<FluteFingeringProps> = ({ fingering, highlighted = false }) => {
   // Default State
   const active = fingering || {
     note: 'Select Note',
@@ -53,16 +54,18 @@ export const FluteFingering: React.FC<FluteFingeringProps> = ({ fingering }) => 
     );
   };
 
+  const containerClasses = `flex flex-col items-center justify-center py-3 px-2 bg-white border border-slate-200 rounded-lg shadow-md relative overflow-hidden ${highlighted ? 'ring-4 ring-emerald-400/70 shadow-emerald-500/40' : ''}`;
+
   return (
-    <div className="flex flex-col items-center justify-center py-8 bg-white border border-slate-200 rounded-xl shadow-lg relative overflow-hidden">
+    <div className={containerClasses}>
       
-      <h3 className={`text-4xl font-serif mb-6 tracking-wider ${isSelected ? 'text-slate-900' : 'text-slate-400'}`}>
+      <h3 className={`text-xl font-serif mb-2 tracking-wider ${isSelected ? 'text-slate-900' : 'text-slate-400'}`}>
         {active.note}
       </h3>
       
-      <div className="relative p-4">
-        {/* SVG Fingering Chart - Vertical Style */}
-        <svg width="240" height="550" viewBox="0 0 240 550" className="drop-shadow-sm">
+      <div className="relative p-1">
+        {/* SVG Fingering Chart - Vertical Style (Compact) */}
+        <svg width="140" height="320" viewBox="0 0 240 550" className="drop-shadow-sm">
           
           {/* Central Guide Line */}
           <line x1="120" y1="20" x2="120" y2="530" className="stroke-slate-300" strokeWidth="1" strokeDasharray="4 4"/>
@@ -135,7 +138,7 @@ export const FluteFingering: React.FC<FluteFingeringProps> = ({ fingering }) => 
       
       {!isSelected && (
           <div className="absolute inset-0 flex items-center justify-center bg-white/80 backdrop-blur-sm z-10">
-             <p className="text-slate-500 font-serif italic text-lg">Select a note</p>
+             <p className="text-slate-500 font-serif italic text-sm">Select</p>
           </div>
       )}
     </div>

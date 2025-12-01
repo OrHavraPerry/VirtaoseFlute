@@ -27,11 +27,22 @@ const App: React.FC = () => {
   const validProgressions = useMemo(() => getValidProgressions(scaleType), [scaleType]);
   const validRhythms = useMemo(() => getValidRhythms(progression), [progression]);
 
-  // Determine which notes to display. Default to Root + 4 if nothing selected.
-  // Safe check for currentScaleNotes to prevent crashes
-  const displayNotes = (selectedNotes && selectedNotes.length > 0) 
-    ? selectedNotes 
-    : (currentScaleNotes && currentScaleNotes.length > 0 ? [`${currentScaleNotes[0]}4`] : []);
+  // Determine which notes to display in fingering charts: show both octave 4 and 5
+  const displayNotes = useMemo(() => {
+    if (!currentScaleNotes) return [];
+    const baseNotes = currentScaleNotes.map(n => n.replace(/[0-9]/g, ''));
+    const octave4 = baseNotes.map(n => `${n}4`);
+    const octave5 = baseNotes.map(n => `${n}5`);
+    return [...octave4, ...octave5];
+  }, [currentScaleNotes]);
+
+  // Base-note set (without octave) for highlighting charts that correspond to selected notes
+  const selectedBaseNotes = useMemo(() => 
+    selectedNotes
+      .map((n) => n.replace(/[0-9]/g, ''))
+      .filter(Boolean),
+    [selectedNotes]
+  );
 
   const togglePlay = () => {
     if (isPlaying) {
@@ -114,7 +125,7 @@ const App: React.FC = () => {
     <div className="min-h-screen bg-slate-950 text-slate-200 selection:bg-gold-500/30">
       {/* Header */}
       <header className="border-b border-slate-800 bg-slate-900/50 backdrop-blur-md sticky top-0 z-30">
-        <div className="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between">
+        <div className="w-full px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-full bg-gold-500 flex items-center justify-center text-slate-900 shadow-lg shadow-gold-500/20">
               <Music className="w-5 h-5" />
@@ -127,20 +138,20 @@ const App: React.FC = () => {
         </div>
       </header>
 
-      <main className="max-w-5xl mx-auto px-4 py-8 space-y-8">
+      <main className="w-full px-6 py-2 space-y-3">
         
         {/* 1. CONFIG SECTION */}
-        <section className="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-xl relative overflow-hidden group">
+        <section className="bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-xl relative overflow-hidden group">
             <div className="absolute top-0 right-0 w-64 h-64 bg-gold-500/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 group-hover:bg-gold-500/10 transition-colors pointer-events-none"></div>
 
             <div className="relative z-10">
-                <div className="flex items-center gap-2 mb-6 border-b border-slate-800 pb-4">
+                <div className="flex items-center gap-2 mb-3 border-b border-slate-800 pb-2">
                     <Settings2 className="w-5 h-5 text-gold-500" />
                     <h2 className="text-lg font-bold uppercase tracking-wider text-slate-200">Configuration</h2>
                 </div>
 
                 {/* Top Row: Root Note Selection */}
-                <div className="mb-6">
+                <div className="mb-3">
                     <label className="block text-xs text-slate-400 mb-2 font-medium uppercase tracking-wide">Key Center (Root)</label>
                     <div className="flex flex-wrap gap-2">
                     {Object.values(NoteName).map((n) => (
@@ -162,7 +173,7 @@ const App: React.FC = () => {
                 </div>
 
                 {/* Middle Row: Dropdowns & Sliders */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-3">
                     {/* Scale Type */}
                     <div>
                         <label className="block text-xs text-slate-400 mb-2 font-medium uppercase tracking-wide">Scale</label>
@@ -218,7 +229,7 @@ const App: React.FC = () => {
                 </div>
                 
                 {/* Tempo Slider - Full Width */}
-                <div className="mb-8">
+                <div className="mb-4">
                      <label className="block text-xs text-slate-400 mb-2 font-medium flex justify-between items-center uppercase tracking-wide">
                         <span>Tempo (BPM)</span>
                         <span className="bg-slate-800 text-gold-400 px-3 py-0.5 rounded text-xs font-mono border border-slate-700">{tempo}</span>
@@ -234,11 +245,11 @@ const App: React.FC = () => {
                 </div>
 
                 {/* Bottom Row: Controls */}
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-slate-800 pt-6">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-slate-800 pt-3">
                     <button
                         onClick={() => setChordsEnabled(!chordsEnabled)}
                         className={`
-                            px-4 py-4 rounded-lg font-bold text-xs uppercase tracking-widest flex items-center gap-2 transition-all w-full sm:w-auto justify-center
+                            px-3 py-2 rounded-lg font-bold text-xs uppercase tracking-widest flex items-center gap-2 transition-all w-full sm:w-auto justify-center
                             ${chordsEnabled 
                             ? 'bg-slate-800 text-gold-500 border border-gold-500/30 hover:bg-slate-750' 
                             : 'bg-slate-900/50 text-slate-500 border border-slate-700 hover:text-slate-400'
@@ -252,7 +263,7 @@ const App: React.FC = () => {
                     <button
                         onClick={togglePlay}
                         className={`
-                            px-8 py-4 rounded-lg font-bold text-sm uppercase tracking-widest flex items-center justify-center gap-3 transition-all transform active:scale-95 shadow-lg w-full sm:w-auto
+                            px-6 py-2 rounded-lg font-bold text-sm uppercase tracking-widest flex items-center justify-center gap-2 transition-all transform active:scale-95 shadow-lg w-full sm:w-auto
                             ${isPlaying 
                             ? 'bg-slate-800 text-red-500 border border-red-500/30 hover:bg-slate-750 hover:text-red-400' 
                             : 'bg-gold-500 text-slate-900 hover:bg-gold-400 hover:shadow-gold-500/20'
@@ -270,8 +281,8 @@ const App: React.FC = () => {
         </section>
 
         {/* 2. SCALE HARMONY SECTION */}
-        <section className="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-lg">
-            <div className="flex items-center justify-between mb-6 border-b border-slate-800 pb-4">
+        <section className="bg-slate-900 border border-slate-800 rounded-xl p-3 shadow-lg">
+            <div className="flex items-center justify-between mb-3 border-b border-slate-800 pb-2">
                 <div className="flex items-center gap-2">
                     <Activity className="w-5 h-5 text-slate-400" />
                     <h2 className="text-lg font-bold uppercase tracking-wider text-slate-200">Scale Harmony</h2>
@@ -281,7 +292,7 @@ const App: React.FC = () => {
                 </span>
             </div>
             
-            <div className="flex flex-wrap gap-4 justify-center items-center py-4">
+            <div className="flex flex-wrap gap-3 justify-center items-center py-2">
                 {currentScaleNotes && currentScaleNotes.map((note, index) => {
                     const isRoot = index === 0;
                     const isPlayingThisNote = playingNoteIndices.includes(index);
@@ -294,7 +305,7 @@ const App: React.FC = () => {
                         key={`${note}-${index}`}
                         onClick={() => handleNoteClick(note, index)}
                         className={`
-                        relative group w-16 h-24 sm:w-20 sm:h-28 rounded-xl border flex flex-col items-center justify-center transition-all duration-300
+                        relative group w-14 h-20 sm:w-16 sm:h-22 rounded-lg border flex flex-col items-center justify-center transition-all duration-300
                         ${isSelected 
                             ? 'bg-gold-500/20 border-gold-500 scale-105 z-10 shadow-[0_0_20px_-5px_rgba(234,179,8,0.4)]' 
                             : 'bg-slate-800 border-slate-700 hover:border-slate-500 hover:bg-slate-750 hover:-translate-y-1'
@@ -320,24 +331,24 @@ const App: React.FC = () => {
         </section>
 
         {/* 3. FINGERING CHARTS SECTION */}
-        <section className="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-xl overflow-hidden min-h-[550px]">
-            <div className="flex items-center gap-2 mb-8 border-b border-slate-800 pb-4">
+        <section className="bg-slate-900 border border-slate-800 rounded-xl p-3 shadow-xl overflow-hidden">
+            <div className="flex items-center gap-2 mb-2 border-b border-slate-800 pb-1">
                 <Music className="w-5 h-5 text-slate-400" />
                 <h2 className="text-lg font-bold uppercase tracking-wider text-slate-200">Fingering Charts</h2>
             </div>
             
-            {/* Horizontal Scroll Container */}
-            <div 
-                className="flex flex-nowrap gap-8 w-full overflow-x-auto pb-8 px-4 custom-scrollbar"
-                style={{ 
-                    justifyContent: displayNotes.length <= 3 ? 'center' : 'flex-start' 
-                }}
-            >
-                {displayNotes.map((note) => (
-                    <div key={note} className="flex-shrink-0 transition-transform duration-500 hover:scale-[1.01]">
-                        <FluteFingering fingering={getFingering(note)} />
-                    </div>
-                ))}
+            {/* Flex container - no scroll, all charts visible */}
+            <div className="flex flex-wrap gap-3 w-full justify-center">
+                {displayNotes.map((note) => {
+                    const base = note.replace(/[0-9]/g, '');
+                    const isHighlighted = selectedBaseNotes.includes(base);
+
+                    return (
+                        <div key={note} className="transition-transform duration-300">
+                            <FluteFingering fingering={getFingering(note)} highlighted={isHighlighted} />
+                        </div>
+                    );
+                })}
             </div>
             
             {displayNotes.length === 0 && (
@@ -348,14 +359,14 @@ const App: React.FC = () => {
             )}
         </section>
 
-        {/* 4. AI FEATURES SECTION */}
-        <section>
+        {/* 4. AI FEATURES SECTION - Hidden for hands-free mode */}
+        {/* <section>
             <AICoach 
                 root={root} 
                 scaleType={scaleType} 
                 onCompositionGenerated={handleCompositionGenerated}
             />
-        </section>
+        </section> */}
 
       </main>
     </div>
