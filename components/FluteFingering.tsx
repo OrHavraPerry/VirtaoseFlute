@@ -1,14 +1,25 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Fingering } from '../types';
 
 interface FluteFingeringProps {
   fingering: Fingering | null;
   highlighted?: boolean;
+  alternatives?: Fingering[];
 }
 
-export const FluteFingering: React.FC<FluteFingeringProps> = ({ fingering, highlighted = false }) => {
+export const FluteFingering: React.FC<FluteFingeringProps> = ({ fingering, highlighted = false, alternatives = [] }) => {
+  const [variantIndex, setVariantIndex] = useState(0);
+
+  // Reset selected variant when primary fingering changes (i.e., new note)
+  useEffect(() => {
+    setVariantIndex(0);
+  }, [fingering?.note]);
+
+  const variants = fingering ? [fingering, ...alternatives] : [];
+  const currentFingering = variants[variantIndex] || fingering;
+
   // Default State
-  const active = fingering || {
+  const active = currentFingering || {
     note: 'Select Note',
     thumb: false, thumbBb: false,
     lh1: false, lh2: false, lh3: false, lhPinky: false,
@@ -16,7 +27,7 @@ export const FluteFingering: React.FC<FluteFingeringProps> = ({ fingering, highl
     rhPinkyEb: false, rhPinkyCsharp: false, rhPinkyC: false,
   };
 
-  const isSelected = !!fingering;
+  const isSelected = !!currentFingering;
 
   // Component for drawing keys
   const Key = ({ x, y, r = 10, pressed, label, type = 'circle' }: { x: number, y: number, r?: number, pressed: boolean, label?: string, type?: 'circle' | 'rect' | 'pill' | 'paddle' | 'lever' }) => {
@@ -54,7 +65,7 @@ export const FluteFingering: React.FC<FluteFingeringProps> = ({ fingering, highl
     );
   };
 
-  const containerClasses = `flex flex-col items-center justify-center py-3 px-2 bg-white border border-slate-200 rounded-lg shadow-md relative overflow-hidden ${highlighted ? 'ring-4 ring-emerald-400/70 shadow-emerald-500/40' : ''}`;
+  const containerClasses = `flex flex-col items-center justify-center py-3 px-2 bg-white border border-slate-200 rounded-lg shadow-md relative overflow-hidden ${highlighted ? 'ring-4 ring-emerald-400 shadow-[0_0_30px_rgba(16,185,129,0.85)] scale-[1.02] bg-emerald-50' : ''}`;
 
   return (
     <div className={containerClasses}>
@@ -135,6 +146,25 @@ export const FluteFingering: React.FC<FluteFingeringProps> = ({ fingering, highl
 
         </svg>
       </div>
+
+      {/* Alternative fingering selector */}
+      {variants.length > 1 && (
+        <div className="mt-3 flex justify-center gap-1">
+          {variants.map((variant, idx) => (
+            <button
+              key={idx}
+              type="button"
+              onClick={() => setVariantIndex(idx)}
+              className={`w-4 h-4 rounded-md border transition-colors duration-150 ${
+                idx === variantIndex
+                  ? 'bg-emerald-400 border-emerald-500'
+                  : 'bg-white/80 border-slate-300 hover:bg-slate-100'
+              }`}
+              aria-label={idx === 0 ? 'Primary fingering' : `Alternative fingering ${idx}`}
+            />
+          ))}
+        </div>
+      )}
       
       {!isSelected && (
           <div className="absolute inset-0 flex items-center justify-center bg-white/80 backdrop-blur-sm z-10">

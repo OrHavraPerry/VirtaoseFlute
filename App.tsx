@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Music, Play, Square, Settings2, Activity, Sliders, ChevronRight, Volume2, VolumeX } from 'lucide-react';
 import { NoteName, ScaleType, ProgressionType, RhythmType, AIComposition } from './types';
-import { NOTES_ORDER, getFingering, getValidProgressions, getValidRhythms } from './constants';
+import { NOTES_ORDER, getFingering, getFingeringAlternatives, getValidProgressions, getValidRhythms } from './constants';
+
 import { FluteFingering } from './components/FluteFingering';
 import { audioService } from './services/audio';
 import { MusicTheory } from './services/theory';
@@ -27,13 +28,27 @@ const App: React.FC = () => {
   const validProgressions = useMemo(() => getValidProgressions(scaleType), [scaleType]);
   const validRhythms = useMemo(() => getValidRhythms(progression), [progression]);
 
-  // Determine which notes to display in fingering charts: show both octave 4 and 5
+  // Determine which notes to display in fingering charts: show both octave 4 and 5,
+  // and ensure they are ordered by pitch from low to high.
   const displayNotes = useMemo(() => {
     if (!currentScaleNotes) return [];
+
     const baseNotes = currentScaleNotes.map(n => n.replace(/[0-9]/g, ''));
     const octave4 = baseNotes.map(n => `${n}4`);
     const octave5 = baseNotes.map(n => `${n}5`);
-    return [...octave4, ...octave5];
+
+    const all = [...octave4, ...octave5];
+
+    const getPitchVal = (note: string) => {
+      const match = note.match(/^([A-G]#?)(\d)$/);
+      if (!match) return 0;
+      const [, name, oct] = match;
+      const octave = parseInt(oct, 10);
+      const index = NOTES_ORDER.indexOf(name as NoteName);
+      return octave * 12 + (index >= 0 ? index : 0);
+    };
+
+    return all.sort((a, b) => getPitchVal(a) - getPitchVal(b));
   }, [currentScaleNotes]);
 
   // Base-note set (without octave) for highlighting charts that correspond to selected notes
@@ -342,10 +357,16 @@ const App: React.FC = () => {
                 {displayNotes.map((note) => {
                     const base = note.replace(/[0-9]/g, '');
                     const isHighlighted = selectedBaseNotes.includes(base);
+                    const primaryFingering = getFingering(note);
+                    const alternativeFingerings = getFingeringAlternatives(note);
 
                     return (
                         <div key={note} className="transition-transform duration-300">
-                            <FluteFingering fingering={getFingering(note)} highlighted={isHighlighted} />
+                            <FluteFingering 
+                                fingering={primaryFingering} 
+                                alternatives={alternativeFingerings}
+                                highlighted={isHighlighted} 
+                            />
                         </div>
                     );
                 })}

@@ -280,6 +280,90 @@ export const FLUTE_FINGERINGS: Record<string, Fingering> = {
   'C6': createFingering({ note: 'C6', lh1: true, rhPinkyEb: true }),
 };
 
+// Optional: alternative fingerings per written note.
+// Curated set of widely-used alternates; primary fingerings remain the same.
+// This is not exhaustive, but focuses on standard, reliable options.
+const FLUTE_FINGERING_ALTERNATIVES: Record<string, Fingering[]> = {
+  // --- B♭ (A#) alternates ---
+  // Primary for A#4 / A#5 is the common 1-1 fingering.
+  'A#4': [
+    // Thumb B♭: Bb thumb + LH1, minimal RH for clarity.
+    createFingering({ note: 'A#4', thumb: true, thumbBb: true, lh1: true, rhPinkyEb: true }),
+    // Long B♭: LH1 + RH1+RH2 with Eb key – stable intonation option.
+    createFingering({ note: 'A#4', thumb: true, lh1: true, rh1: true, rh2: true, rhPinkyEb: true }),
+  ],
+  'A#5': [
+    createFingering({ note: 'A#5', thumb: true, thumbBb: true, lh1: true, rhPinkyEb: true }),
+    createFingering({ note: 'A#5', thumb: true, lh1: true, rh1: true, rh2: true, rhPinkyEb: true }),
+  ],
+
+  // --- C# alternates ---
+  // Primary C#4: standard "full" fingering with most LH+RH closed.
+  // Alternate: more open configuration used in some contexts.
+  'C#4': [
+    createFingering({ note: 'C#4', thumb: true, lh1: true, lh2: true, lh3: true, rh1: true, rh2: true, rhPinkyCsharp: true }),
+  ],
+  // Primary C#5: open C# (pinky only). Alternate: closed variant to darken/stabilize.
+  'C#5': [
+    createFingering({ note: 'C#5', thumb: true, lh1: true, lh2: true, lh3: true, rh1: true, rh2: true, rhPinkyEb: true, rhPinkyCsharp: true }),
+  ],
+
+  // --- F# alternates ---
+  // Primary F#4/F#5: standard with RH3 + Eb.
+  // Alternate: using RH2 instead of RH3 (common alternate in some passages).
+  'F#4': [
+    createFingering({ note: 'F#4', thumb: true, lh1: true, lh2: true, lh3: true, rh2: true, rhPinkyEb: true }),
+  ],
+  'F#5': [
+    createFingering({ note: 'F#5', thumb: true, lh1: true, lh2: true, lh3: true, rh2: true, rhPinkyEb: true }),
+  ],
+
+  // --- High E / F color/intonation alternates (very common classical usage) ---
+  // Slightly adjust RH stack to favor tuning/response; keep close to basic shape.
+  'E5': [
+    // Drop RH2 for a more flexible upper E in some contexts.
+    createFingering({ note: 'E5', thumb: true, lh1: true, lh2: true, lh3: true, rh1: true, rhPinkyEb: true }),
+  ],
+  'F5': [
+    // Remove RH2 to slightly adjust color.
+    createFingering({ note: 'F5', thumb: true, lh1: true, lh2: true, lh3: true, rh1: true, rhPinkyEb: true }),
+  ],
+
+  // --- D alternates ---
+  // Primary D4/D5 already follow standard basic fingerings.
+  // Alternates here slightly adjust RH usage for color/response.
+  'D4': [
+    // Drop RH2 to open the resonance a bit while keeping pitch stable.
+    createFingering({ note: 'D4', thumb: true, lh1: true, lh2: true, lh3: true, rh1: true, rh3: true }),
+  ],
+  'D5': [
+    // Similar idea for middle D.
+    createFingering({ note: 'D5', thumb: true, lh2: true, lh3: true, rh1: true, rh3: true }),
+  ],
+
+  // --- A alternates ---
+  // Primary A4/A5: thumb + LH1+LH2 (+ Eb). Alternate: add RH1 for a slightly darker, more centered tone.
+  'A4': [
+    createFingering({ note: 'A4', thumb: true, lh1: true, lh2: true, rh1: true, rhPinkyEb: true }),
+  ],
+  'A5': [
+    createFingering({ note: 'A5', thumb: true, lh1: true, lh2: true, rh1: true, rhPinkyEb: true }),
+  ],
+};
+
+export const getFingeringAlternatives = (noteName: string): Fingering[] => {
+  const base = noteName.replace(/[0-9]/g, '');
+  const attempt4 = `${base}4`;
+  const attempt5 = `${base}5`;
+
+  return (
+    FLUTE_FINGERING_ALTERNATIVES[noteName] ||
+    FLUTE_FINGERING_ALTERNATIVES[attempt5] ||
+    FLUTE_FINGERING_ALTERNATIVES[attempt4] ||
+    []
+  );
+};
+
 export const getFingering = (noteName: string): Fingering | null => {
   const base = noteName.replace(/[0-9]/g, '');
   const attempt4 = `${base}4`;
