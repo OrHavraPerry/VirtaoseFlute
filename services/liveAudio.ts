@@ -436,8 +436,13 @@ class LiveAudioService {
       }
     }
 
-    // Confidence is the correlation value (0-1 range, can be negative)
-    const confidence = Math.max(0, maxCorr);
+    // If correlation is too weak, treat as "no reliable key"
+    if (maxCorr < 0.35 || !bestKey) {
+      return { key: null, confidence: 0 };
+    }
+
+    // Map correlation to a 0..1 confidence range with a floor threshold
+    const confidence = Math.max(0, Math.min(1, (maxCorr - 0.35) / 0.65));
 
     return { key: bestKey, confidence };
   }
