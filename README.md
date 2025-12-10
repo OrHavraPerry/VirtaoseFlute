@@ -39,21 +39,44 @@ Built with **React** and **Vite**.
 
 - **Node.js** (LTS recommended)
 
-### Installation
+If you are new to code or terminals, follow these steps slowly:
+
+1. Install Node.js from https://nodejs.org (download the **LTS** version and run the installer).
+2. Download or clone this project to your computer.
+3. Open the project folder `VirtaoseFlute` in VS Code (or your editor of choice).
+4. Open a terminal **inside the project folder**:
+   - In VS Code: `Terminal` → `New Terminal` (it should show the project path, e.g. `.../VirtaoseFlute`).
+
+### Installation (one-time setup)
+
+In that terminal, install the dependencies:
 
 ```bash
 npm install
 ```
 
+Wait until it finishes without errors before continuing.
+
 ### Run the app locally
+
+Start the development server:
 
 ```bash
 npm run dev
 ```
 
-Then open the URL printed by Vite (typically `http://localhost:5173` or `http://localhost:3000`) in your browser.
+You will see a local URL in the terminal (typically `http://localhost:5173`).
+Copy that URL and paste it into your browser’s address bar to open the app.
 
 > Note: The current codebase does **not** require a Gemini API key to run. Any older references to `GEMINI_API_KEY` can be ignored unless you add AI features that use it.
+
+---
+
+## Screenshot
+
+![Virtuoso Flute Companion screenshot](./screenshot.png)
+
+Place a full-screen screenshot of the running app in the project root as `screenshot.png` so this image renders correctly.
 
 ---
 
