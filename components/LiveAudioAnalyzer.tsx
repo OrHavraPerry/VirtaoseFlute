@@ -165,8 +165,15 @@ export const LiveAudioAnalyzer: React.FC = () => {
               <div className="space-y-2">
                 {sorted.map(([key, count]) => {
                   const percentage = (count / totalCount) * 100;
-                  const barWidth = (count / maxCount) * 100;
                   const isCurrentKey = key === audioState.detectedKey;
+                  
+                  // Base width from how often the key was detected
+                  const baseWidth = (count / maxCount) * 100;
+                  // For the currently detected key, also weight by confidence
+                  const confidenceFactor = isCurrentKey
+                    ? 0.4 + 0.6 * Math.max(0, Math.min(1, audioState.keyConfidence || 0))
+                    : 1;
+                  const barWidth = Math.min(100, baseWidth * confidenceFactor);
                   
                   return (
                     <div key={key} className="flex items-center gap-3">
@@ -186,7 +193,9 @@ export const LiveAudioAnalyzer: React.FC = () => {
                       <span className={`w-14 text-right text-xs font-mono ${
                         isCurrentKey ? 'text-emerald-400' : 'text-slate-400'
                       }`}>
-                        {percentage.toFixed(1)}%
+                        {isCurrentKey
+                          ? `${percentage.toFixed(1)}% · ${(Math.max(0, Math.min(1, audioState.keyConfidence || 0)) * 100).toFixed(0)}%`
+                          : `${percentage.toFixed(1)}%`}
                       </span>
                     </div>
                   );
