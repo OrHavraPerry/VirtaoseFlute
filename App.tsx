@@ -8,6 +8,7 @@ import { audioService } from './services/audio';
 import { MusicTheory } from './services/theory';
 import { AICoach } from './components/AICoach';
 import { LiveAudioAnalyzer } from './components/LiveAudioAnalyzer';
+import { liveAudioService } from './services/liveAudio';
 
 const App: React.FC = () => {
   const [root, setRoot] = useState<NoteName>(NoteName.C);
@@ -21,6 +22,7 @@ const App: React.FC = () => {
   
   const [selectedNotes, setSelectedNotes] = useState<string[]>([]); 
   const [playingNoteIndices, setPlayingNoteIndices] = useState<number[]>([]); 
+  const [liveDetectedNoteBase, setLiveDetectedNoteBase] = useState<string | null>(null);
 
   // Derived state via Theory Service
   const currentScaleNotes = useMemo(() => MusicTheory.getScaleNotes(root, scaleType), [root, scaleType]);
@@ -53,12 +55,17 @@ const App: React.FC = () => {
   }, [currentScaleNotes]);
 
   // Base-note set (without octave) for highlighting charts that correspond to selected notes
-  const selectedBaseNotes = useMemo(() => 
-    selectedNotes
+  const selectedBaseNotes = useMemo(() => {
+    const bases = selectedNotes
       .map((n) => n.replace(/[0-9]/g, ''))
-      .filter(Boolean),
-    [selectedNotes]
-  );
+      .filter(Boolean);
+
+    if (liveDetectedNoteBase && !bases.includes(liveDetectedNoteBase)) {
+      bases.push(liveDetectedNoteBase);
+    }
+
+    return bases;
+  }, [selectedNotes, liveDetectedNoteBase]);
 
   const togglePlay = () => {
     if (isPlaying) {
@@ -80,6 +87,20 @@ const App: React.FC = () => {
   useEffect(() => {
     audioService.setChordsEnabled(chordsEnabled);
   }, [chordsEnabled]);
+
+  // Subscribe to live audio dominant note to highlight fingering charts for the current note
+  useEffect(() => {
+    const unsubscribe = liveAudioService.subscribe((state) => {
+      if (state.dominantNote) {
+        const base = state.dominantNote.replace(/[0-9]/g, '');
+        setLiveDetectedNoteBase(base || null);
+      } else {
+        setLiveDetectedNoteBase(null);
+      }
+    });
+
+    return unsubscribe;
+  }, []);
 
   // Effect: Reset Progression if invalid for new Scale
   useEffect(() => {
