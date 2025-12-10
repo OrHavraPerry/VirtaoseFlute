@@ -59,6 +59,8 @@ class LiveAudioService {
   
   // Chroma history for stable key detection
   private chromaHistory: number[][] = [];
+  // Recent pitch history for stable current note detection
+  private pitchHistory: number[] = [];
   
   // Key histogram tracking
   private keyHistogram: Record<string, number> = {};
@@ -126,6 +128,7 @@ class LiveAudioService {
 
       this.isListening = true;
       this.chromaHistory = [];
+      this.pitchHistory = [];
       this.keyHistogram = {};
       
       this.currentState = {
@@ -175,6 +178,7 @@ class LiveAudioService {
 
     this.analyser = null;
     this.chromaHistory = [];
+    this.pitchHistory = [];
     this.keyHistogram = {};
 
     this.currentState = {
@@ -213,8 +217,27 @@ class LiveAudioService {
     // Calculate volume (RMS)
     const volume = this.calculateRMS(this.timeDomainData);
 
-    // Detect dominant pitch using autocorrelation
-    const { frequency: dominantFreq, note: dominantNote } = this.detectPitch(this.timeDomainData);
+    // Detect dominant pitch using autocorrelation (raw frequency)
+    const { frequency: rawFreq } = this.detectPitch(this.timeDomainData);
+
+    // Smooth pitch over a short history to avoid flickering to harmonics
+    let dominantFreq: number | null = null;
+    let dominantNote: string | null = null;
+
+    if (rawFreq && volume > 0.01) {
+      this.pitchHistory.push(rawFreq);
+      if (this.pitchHistory.length > 5) {
+        this.pitchHistory.shift();
+      }
+
+      const sorted = [...this.pitchHistory].sort((a, b) => a - b);
+      const medianFreq = sorted[Math.floor(sorted.length / 2)];
+
+      dominantFreq = medianFreq;
+      dominantNote = this.frequencyToNote(medianFreq);
+    } else {
+      this.pitchHistory = [];
+    }
 
     // Extract chroma vector from frequency data
     const chromaVector = this.extractChroma(this.frequencyData);
@@ -261,7 +284,7 @@ class LiveAudioService {
    * Pitch detection using autocorrelation method
    * Good for monophonic signals like flute
    */
-  private detectPitch(buffer: Float32Array): { frequency: number | null; note: string | null } {
+  private detectPitch(buffer: Float32Array): { frequency: number | null } {
     const sampleRate = this.ctx?.sampleRate || SAMPLE_RATE;
     const bufferSize = buffer.length;
     
@@ -281,31 +304,32 @@ class LiveAudioService {
     const minLag = Math.floor(sampleRate / 2000); // Max freq ~2000Hz
     const maxLag = Math.floor(sampleRate / 50);   // Min freq ~50Hz
 
-    let maxCorr = -Infinity;
+    let maxScore = -Infinity;
+    let bestLagCorr = 0;
     let bestLag = 0;
 
     // Find first significant peak
     let foundPeak = false;
     for (let lag = minLag; lag < Math.min(maxLag, bufferSize); lag++) {
-      if (correlations[lag] > maxCorr) {
-        maxCorr = correlations[lag];
+      const corr = correlations[lag];
+
+      // Bias towards lower frequencies (larger lags) so we prefer the fundamental
+      const score = corr * lag;
+
+      if (score > maxScore) {
+        maxScore = score;
+        bestLagCorr = corr;
         bestLag = lag;
         foundPeak = true;
       }
-      // Once we start declining significantly, we've found our peak
-      if (foundPeak && correlations[lag] < maxCorr * 0.8) {
-        break;
-      }
     }
 
-    if (bestLag === 0 || maxCorr < correlations[0] * 0.1) {
-      return { frequency: null, note: null };
+    if (!foundPeak || bestLag === 0 || bestLagCorr < correlations[0] * 0.1) {
+      return { frequency: null };
     }
 
     const frequency = sampleRate / bestLag;
-    const note = this.frequencyToNote(frequency);
-
-    return { frequency, note };
+    return { frequency };
   }
 
   /**
