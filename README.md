@@ -42,7 +42,13 @@ Built with **React** and **Vite**.
 If you are new to code or terminals, follow these steps slowly:
 
 1. Install Node.js from https://nodejs.org (download the **LTS** version and run the installer).
-2. Download or clone this project to your computer.
+2. **Clone this repository** to your computer using Git:
+
+   ```bash
+   git clone https://github.com/OrHavraPerry/VirtaoseFlute.git
+   ```
+
+   This will create a local folder named `VirtaoseFlute`.
 3. Open the project folder `VirtaoseFlute` in VS Code (or your editor of choice).
 4. Open a terminal **inside the project folder**:
    - In VS Code: `Terminal` → `New Terminal` (it should show the project path, e.g. `.../VirtaoseFlute`).
