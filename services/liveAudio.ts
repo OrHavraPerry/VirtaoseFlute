@@ -38,6 +38,7 @@ export interface LiveAudioState {
   keyConfidence: number;
   chromaVector: number[];
   volume: number;
+  keyHistogram: Record<string, number>; // Histogram of detected keys
 }
 
 type LiveAudioListener = (state: LiveAudioState) => void;
@@ -59,6 +60,9 @@ class LiveAudioService {
   // Chroma history for stable key detection
   private chromaHistory: number[][] = [];
   
+  // Key histogram tracking
+  private keyHistogram: Record<string, number> = {};
+  
   // State
   private currentState: LiveAudioState = {
     isListening: false,
@@ -68,6 +72,7 @@ class LiveAudioService {
     keyConfidence: 0,
     chromaVector: new Array(12).fill(0),
     volume: 0,
+    keyHistogram: {},
   };
   
   private listeners: LiveAudioListener[] = [];
@@ -121,10 +126,12 @@ class LiveAudioService {
 
       this.isListening = true;
       this.chromaHistory = [];
+      this.keyHistogram = {};
       
       this.currentState = {
         ...this.currentState,
         isListening: true,
+        keyHistogram: {},
       };
       this.notifyListeners();
 
@@ -168,6 +175,7 @@ class LiveAudioService {
 
     this.analyser = null;
     this.chromaHistory = [];
+    this.keyHistogram = {};
 
     this.currentState = {
       isListening: false,
@@ -177,6 +185,7 @@ class LiveAudioService {
       keyConfidence: 0,
       chromaVector: new Array(12).fill(0),
       volume: 0,
+      keyHistogram: {},
     };
     this.notifyListeners();
   }
@@ -221,6 +230,11 @@ class LiveAudioService {
     // Detect key from averaged chroma
     const { key, confidence } = this.detectKey();
 
+    // Update key histogram if we have a valid key detection with good confidence
+    if (key && confidence > 0.3 && volume > 0.01) {
+      this.keyHistogram[key] = (this.keyHistogram[key] || 0) + 1;
+    }
+
     this.currentState = {
       isListening: true,
       dominantNote: volume > 0.01 ? dominantNote : null,
@@ -229,6 +243,7 @@ class LiveAudioService {
       keyConfidence: confidence,
       chromaVector,
       volume,
+      keyHistogram: { ...this.keyHistogram },
     };
 
     this.notifyListeners();

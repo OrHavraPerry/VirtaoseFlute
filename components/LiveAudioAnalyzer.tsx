@@ -11,6 +11,7 @@ export const LiveAudioAnalyzer: React.FC = () => {
     keyConfidence: 0,
     chromaVector: new Array(12).fill(0),
     volume: 0,
+    keyHistogram: {},
   });
   const [error, setError] = useState<string | null>(null);
 
@@ -141,34 +142,58 @@ export const LiveAudioAnalyzer: React.FC = () => {
           </div>
         </div>
 
-        {/* Chroma Visualization */}
+        {/* Key Histogram */}
         <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4">
           <div className="flex items-center gap-2 mb-3">
-            <span className="text-xs text-slate-400 uppercase tracking-wide font-medium">Pitch Class Distribution</span>
+            <span className="text-xs text-slate-400 uppercase tracking-wide font-medium">Detected Scales Distribution</span>
           </div>
-          <div className="flex gap-1 items-end h-24">
-            {audioState.chromaVector.map((value, index) => {
-              const isKeyRoot = keyRootIndex === index;
+          {(() => {
+            const entries = Object.entries(audioState.keyHistogram) as [string, number][];
+            if (entries.length === 0) {
               return (
-                <div key={index} className="flex-1 flex flex-col items-center gap-1">
-                  <div 
-                    className={`w-full rounded-t transition-all duration-150 ${
-                      isKeyRoot ? 'bg-emerald-500' : 'bg-gold-500/70'
-                    }`}
-                    style={{ 
-                      height: `${Math.max(value * 100, 2)}%`,
-                      minHeight: '2px'
-                    }}
-                  />
-                  <span className={`text-[9px] font-bold ${
-                    isKeyRoot ? 'text-emerald-400' : 'text-slate-500'
-                  }`}>
-                    {NOTE_NAMES[index]}
-                  </span>
+                <div className="text-center text-slate-500 text-sm py-4">
+                  {audioState.isListening ? 'Listening for scales...' : 'No data yet'}
                 </div>
               );
-            })}
-          </div>
+            }
+            // Sort by count descending and take top 8
+            const sorted = entries.sort((a, b) => b[1] - a[1]).slice(0, 8);
+            const maxCount = sorted[0]?.[1] || 1;
+            const totalCount = entries.reduce((sum, [, count]) => sum + count, 0);
+            
+            return (
+              <div className="space-y-2">
+                {sorted.map(([key, count]) => {
+                  const percentage = (count / totalCount) * 100;
+                  const barWidth = (count / maxCount) * 100;
+                  const isCurrentKey = key === audioState.detectedKey;
+                  
+                  return (
+                    <div key={key} className="flex items-center gap-3">
+                      <span className={`w-20 text-sm font-medium truncate ${
+                        isCurrentKey ? 'text-emerald-400' : 'text-slate-300'
+                      }`}>
+                        {key}
+                      </span>
+                      <div className="flex-1 h-5 bg-slate-700 rounded overflow-hidden">
+                        <div 
+                          className={`h-full transition-all duration-300 ${
+                            isCurrentKey ? 'bg-emerald-500' : 'bg-gold-500/70'
+                          }`}
+                          style={{ width: `${barWidth}%` }}
+                        />
+                      </div>
+                      <span className={`w-14 text-right text-xs font-mono ${
+                        isCurrentKey ? 'text-emerald-400' : 'text-slate-400'
+                      }`}>
+                        {percentage.toFixed(1)}%
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })()}
         </div>
 
         {/* Instructions */}
