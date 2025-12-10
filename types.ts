@@ -34,7 +34,24 @@ export enum ScaleType {
   GypsyMinor = 'Gypsy Minor',
   Arabian = 'Arabian (Double Harmonic)',
   Persian = 'Persian',
-  Egyptian = 'Egyptian'
+  Egyptian = 'Egyptian',
+  Chromatic = 'Chromatic',
+  // Additional scales
+  Bebop = 'Bebop Dominant',
+  BebopMajor = 'Bebop Major',
+  Diminished = 'Diminished (Whole-Half)',
+  DiminishedHalfWhole = 'Diminished (Half-Whole)',
+  Augmented = 'Augmented',
+  DoubleHarmonic = 'Double Harmonic Major',
+  Neapolitan = 'Neapolitan Minor',
+  NeapolitanMajor = 'Neapolitan Major',
+  Hungarian = 'Hungarian Minor',
+  Flamenco = 'Flamenco (Spanish Phrygian)',
+  Balinese = 'Balinese (Pelog)',
+  Chinese = 'Chinese (Gong)',
+  Prometheus = 'Prometheus',
+  SuperLocrian = 'Super Locrian (Altered)',
+  LydianDominant = 'Lydian Dominant'
 }
 
 export enum ProgressionType {
@@ -73,6 +90,23 @@ export enum RhythmType {
   SevenEight = 'Prog (7/8)',
   BossaNova = 'Bossa Nova',
   Salsa = 'Salsa (Clave 3-2)',
+  // Additional rhythms
+  Tango = 'Tango',
+  Rumba = 'Rumba',
+  Merengue = 'Merengue',
+  Cumbia = 'Cumbia',
+  Bolero = 'Bolero',
+  Shuffle = 'Blues Shuffle',
+  Motown = 'Motown',
+  NewOrleans = 'New Orleans Second Line',
+  Ska = 'Ska',
+  Dub = 'Dub',
+  DrumAndBass = 'Drum & Bass',
+  House = 'House',
+  Trap = 'Trap',
+  LoFi = 'Lo-Fi Hip Hop',
+  NineEight = 'Compound (9/8)',
+  SixEight = 'Compound (6/8)',
   Custom = 'Custom (AI Generated)'
 }
 
@@ -117,7 +151,30 @@ export interface RhythmPattern {
     conga?: StepValue[];
     rimshot?: StepValue[];
     clap?: StepValue[];
+    // Additional optional instruments
+    tom?: StepValue[];
+    crash?: StepValue[];
+    ride?: StepValue[];
+    tambourine?: StepValue[];
+    bongo?: StepValue[];
+    timbale?: StepValue[];
+    guiro?: StepValue[];
+    cabasa?: StepValue[];
+    agogo?: StepValue[];
+    // Melodic backing elements
+    melody?: MelodyNote[];
+    counterMelody?: MelodyNote[];
+    padChord?: StepValue[];
+    arpeggio?: StepValue[];
     name?: string;
+}
+
+export interface MelodyNote {
+    step: number;           // Which step (0-15 for 16 steps)
+    scaleDegree: number;    // 0-6 for 7-note scale, or specific degree
+    octaveOffset?: number;  // -1, 0, 1 for octave shift
+    duration?: number;      // In steps (1 = 16th note, 4 = quarter note)
+    velocity?: number;      // 0-1 for dynamics
 }
 
 export interface AIComposition {

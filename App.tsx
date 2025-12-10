@@ -7,6 +7,7 @@ import { FluteFingering } from './components/FluteFingering';
 import { audioService } from './services/audio';
 import { MusicTheory } from './services/theory';
 import { AICoach } from './components/AICoach';
+import { LiveAudioAnalyzer } from './components/LiveAudioAnalyzer';
 
 const App: React.FC = () => {
   const [root, setRoot] = useState<NoteName>(NoteName.C);
@@ -294,6 +295,9 @@ const App: React.FC = () => {
                 </div>
             </div>
         </section>
+
+        {/* LIVE AUDIO ANALYSIS SECTION */}
+        <LiveAudioAnalyzer />
 
         {/* 2. SCALE HARMONY SECTION */}
         <section className="bg-slate-900 border border-slate-800 rounded-xl p-3 shadow-lg">

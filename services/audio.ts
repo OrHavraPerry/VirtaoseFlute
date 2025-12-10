@@ -265,6 +265,32 @@ class AudioService {
     }
     if (pattern.rimshot?.[step]) this.perc.playRimshot(swungTime, velocity);
     if (pattern.clap?.[step]) this.perc.playClap(swungTime, velocity);
+    
+    // --- ADDITIONAL PERCUSSION ---
+    if (pattern.tambourine?.[step]) this.perc.playTambourine(swungTime, velocity * 0.7);
+    if (pattern.tom?.[step]) {
+        const isHigh = step % 8 < 4;
+        this.perc.playTom(swungTime, isHigh, velocity * 0.8);
+    }
+    if (pattern.crash?.[step]) this.perc.playCrash(swungTime, velocity * 0.6);
+    if (pattern.ride?.[step]) {
+        const isBell = step % 16 === 0;
+        this.perc.playRide(swungTime, isBell, velocity * 0.7);
+    }
+    if (pattern.bongo?.[step]) {
+        const isHigh = step % 4 < 2;
+        this.perc.playBongo(swungTime, isHigh, velocity * 0.75);
+    }
+    if (pattern.timbale?.[step]) {
+        const isHigh = step % 8 < 4;
+        this.perc.playTimbale(swungTime, isHigh, velocity * 0.8);
+    }
+    if (pattern.guiro?.[step]) this.perc.playGuiro(swungTime, velocity * 0.5);
+    if (pattern.cabasa?.[step]) this.perc.playCabasa(swungTime, velocity * 0.5);
+    if (pattern.agogo?.[step]) {
+        const isHigh = step % 4 < 2;
+        this.perc.playAgogo(swungTime, isHigh, velocity * 0.6);
+    }
 
     // --- BASS (with swing) ---
     if (pattern.bass[step]) {
