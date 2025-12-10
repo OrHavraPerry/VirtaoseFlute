@@ -1,6 +1,3 @@
-<div align="center">
-  <img width="1200" height="475" alt="Virtuoso Flute" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
 
 # Virtuoso Flute Companion
 
@@ -70,23 +67,6 @@ Then open the URL printed by Vite (typically `http://localhost:5173` or `http://
    - The **Detected Scales Distribution** histogram accumulates detected keys and reflects confidence.
    - The **Scale Harmony** badges and **Fingering Charts** highlight notes that match what you play.
 
----
-
-## Screenshots
-
-You can add snapshots of the app here (for example, export images to a `docs/screenshots` folder and reference them):
-
-- Configuration & backing track view
-- Live audio analysis with detected key and current note
-- Scale harmony and fingering charts with highlighted notes
-
-Example (placeholder):
-
-```markdown
-![Live Audio Analysis](docs/screenshots/live-audio-analysis.png)
-```
-
----
 
 ## Tech Stack
 
@@ -94,9 +74,3 @@ Example (placeholder):
 - Vite 6
 - TypeScript 5
 - lucide-react (icons)
-
----
-
-## License
-
-This project is intended as a personal practice tool and example app. Add your preferred license here if you plan to distribute it.
