@@ -76,9 +76,6 @@ Copy that URL and paste it into your browser’s address bar to open the app.
 
 ![Virtuoso Flute Companion screenshot](./screenshot.png)
 
-Place a full-screen screenshot of the running app in the project root as `screenshot.png` so this image renders correctly.
-
----
 
 ## Using the App
 
