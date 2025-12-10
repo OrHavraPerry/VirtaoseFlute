@@ -49,8 +49,7 @@ If you are new to code or terminals, follow these steps slowly:
    ```
 
    This will create a local folder named `VirtaoseFlute`.
-3. Open the project folder `VirtaoseFlute` in VS Code (or your editor of choice).
-4. Open a terminal **inside the project folder**:
+3. Open a terminal **inside the project folder**:
    - In VS Code: `Terminal` → `New Terminal` (it should show the project path, e.g. `.../VirtaoseFlute`).
 
 ### Installation (one-time setup)
