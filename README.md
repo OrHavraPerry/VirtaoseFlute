@@ -1,20 +1,102 @@
 <div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
+  <img width="1200" height="475" alt="Virtuoso Flute" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
 </div>
 
-# Run and deploy your AI Studio app
+# Virtuoso Flute Companion
 
-This contains everything you need to run your app locally.
+An interactive practice companion for flutists. Configure keys and scales, play backing tracks, analyze live audio from your microphone, and see matching fingering charts and harmonic context.
 
-View your app in AI Studio: https://ai.studio/apps/drive/1M_GqS6H8dX-gS_5Dd7ddOSW5UV5_K7_l
+Built with **React** and **Vite**.
 
-## Run Locally
+---
 
-**Prerequisites:**  Node.js
+## Features
 
+- **Configuration panel**
+  - Choose key center (root), scale type, chord progression, rhythm, and tempo.
+  - Toggle harmony (chords) on/off while the backing track plays.
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+- **Backing track generator**
+  - Plays looped progressions in the selected key/rhythm.
+  - UI highlights the currently sounding scale degrees.
+
+- **Live audio analysis**
+  - Uses the Web Audio API to analyze microphone input in real time.
+  - Detects the **current note** (with frequency) and **musical key** using a chroma‑based key‑finding algorithm.
+  - Tracks a **Detected Scales Distribution** histogram over time and shows confidence for the current key.
+
+- **Scale harmony view**
+  - Displays the degrees of the current scale (Root, Deg 2–7).
+  - Highlights notes that are active in the backing track or detected from live audio.
+
+- **Flute fingering charts**
+  - Shows Boehm flute fingerings for scale notes in two octaves.
+  - Highlights fingerings corresponding to selected or detected notes.
+  - Includes curated alternate fingerings (Bb options, forked F, etc.).
+
+---
+
+## Getting Started
+
+### Prerequisites
+
+- **Node.js** (LTS recommended)
+
+### Installation
+
+```bash
+npm install
+```
+
+### Run the app locally
+
+```bash
+npm run dev
+```
+
+Then open the URL printed by Vite (typically `http://localhost:5173` or `http://localhost:3000`) in your browser.
+
+> Note: The current codebase does **not** require a Gemini API key to run. Any older references to `GEMINI_API_KEY` can be ignored unless you add AI features that use it.
+
+---
+
+## Using the App
+
+1. **Configure** the key, scale, progression, rhythm, and tempo in the top section.
+2. Click **Play Backing Track** to start the generated harmony.
+3. Click **Start Listening** in the *Live Audio Analysis* section and allow microphone access.
+4. Play your flute:
+   - The **Detected Key** and **Current Note** cards update in real time.
+   - The **Detected Scales Distribution** histogram accumulates detected keys and reflects confidence.
+   - The **Scale Harmony** badges and **Fingering Charts** highlight notes that match what you play.
+
+---
+
+## Screenshots
+
+You can add snapshots of the app here (for example, export images to a `docs/screenshots` folder and reference them):
+
+- Configuration & backing track view
+- Live audio analysis with detected key and current note
+- Scale harmony and fingering charts with highlighted notes
+
+Example (placeholder):
+
+```markdown
+![Live Audio Analysis](docs/screenshots/live-audio-analysis.png)
+```
+
+---
+
+## Tech Stack
+
+- React 19
+- Vite 6
+- TypeScript 5
+- lucide-react (icons)
+
+---
+
+## License
+
+This project is intended as a personal practice tool and example app. Add your preferred license here if you plan to distribute it.
