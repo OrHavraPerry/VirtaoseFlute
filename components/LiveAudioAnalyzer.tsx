@@ -1,8 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { Mic, MicOff, Music, Activity, BarChart3, Cpu, Zap, Target } from 'lucide-react';
-import { liveAudioService, LiveAudioState, InterpolatedScale } from '../services/liveAudio';
+import { liveAudioService, LiveAudioState } from '../services/liveAudio';
+import { NoteName, ScaleType } from '../types';
 
-export const LiveAudioAnalyzer: React.FC = () => {
+type LiveAudioAnalyzerProps = {
+  selectedRoot?: NoteName;
+  selectedScaleType?: ScaleType;
+  onSelectScale?: (root: NoteName, scaleType: ScaleType) => void;
+  keyConstraintRoot?: NoteName | null;
+  onSelectKeyConstraint?: (root: NoteName | null) => void;
+};
+
+export const LiveAudioAnalyzer: React.FC<LiveAudioAnalyzerProps> = ({
+  selectedRoot,
+  selectedScaleType,
+  onSelectScale,
+  keyConstraintRoot,
+  onSelectKeyConstraint,
+}) => {
   const [audioState, setAudioState] = useState<LiveAudioState>({
     isListening: false,
     dominantNote: null,
@@ -32,6 +47,10 @@ export const LiveAudioAnalyzer: React.FC = () => {
     };
   }, []);
 
+  useEffect(() => {
+    liveAudioService.setInterpolationKeyConstraint(keyConstraintRoot ?? null);
+  }, [keyConstraintRoot]);
+
   const toggleListening = async () => {
     setError(null);
     if (audioState.isListening) {
@@ -50,10 +69,7 @@ export const LiveAudioAnalyzer: React.FC = () => {
   // Parse detected key to get root note for highlighting
   const getKeyRoot = (): number | null => {
     if (!audioState.detectedKey) return null;
-    const parts = audioState.detectedKey.split(' ');
-    if (parts.length < 2) return null;
-    const rootNote = parts[0];
-    return NOTE_NAMES.indexOf(rootNote);
+    return NOTE_NAMES.indexOf(audioState.detectedKey);
   };
 
   const keyRootIndex = getKeyRoot();
@@ -238,18 +254,59 @@ export const LiveAudioAnalyzer: React.FC = () => {
             
             return (
               <div className="space-y-2">
-                {scales.slice(0, 5).map((scale, idx) => (
-                  <div key={`${scale.root}-${scale.type}`} className={`p-2 rounded ${
-                    idx === 0 ? 'bg-purple-500/20 border border-purple-500/30' : 'bg-slate-700/50'
-                  }`}>
+                {scales.slice(0, 5).map((scale, idx) => {
+                  const isSelected =
+                    selectedRoot === (scale.root as NoteName) &&
+                    selectedScaleType === (scale.type as ScaleType);
+
+                  const isPrimary = idx === 0;
+                  const canSelect = typeof onSelectScale === 'function';
+
+                  return (
+                  <button
+                    key={`${scale.root}-${scale.type}`}
+                    type="button"
+                    onClick={() => {
+                      if (!canSelect) return;
+                      onSelectScale(scale.root as NoteName, scale.type as ScaleType);
+                    }}
+                    className={`p-2 rounded text-left w-full transition-all ${
+                      isSelected
+                        ? 'bg-gold-500/15 border border-gold-500/30'
+                        : isPrimary
+                          ? 'bg-purple-500/20 border border-purple-500/30'
+                          : 'bg-slate-700/50'
+                    } ${canSelect ? 'hover:bg-slate-700/70 cursor-pointer' : 'cursor-default'}`}
+                  >
                     <div className="flex items-center justify-between">
                       <span className={`font-bold ${
-                        idx === 0 ? 'text-purple-400' : 'text-slate-300'
+                        isSelected
+                          ? 'text-gold-300'
+                          : isPrimary
+                            ? 'text-purple-400'
+                            : 'text-slate-300'
                       }`}>
                         {scale.root} {scale.type}
                       </span>
                       <span className="text-xs font-mono text-slate-400">
                         {(scale.confidence * 100).toFixed(0)}% match
+                      </span>
+                    </div>
+                    <div className="mt-1 text-[11px] font-mono text-slate-500 flex flex-wrap gap-x-3 gap-y-0.5">
+                      <span>
+                        purity {(scale.stats.purity * 100).toFixed(0)}%
+                      </span>
+                      <span>
+                        coverage {(scale.stats.coverage * 100).toFixed(0)}%
+                      </span>
+                      <span>
+                        out {((scale.stats.outOfScaleWeight / Math.max(1e-9, scale.stats.totalWeight)) * 100).toFixed(0)}%
+                      </span>
+                      <span>
+                        size {scale.stats.scaleSize}
+                      </span>
+                      <span>
+                        penalty {((1 - scale.stats.sizePenalty) * 100).toFixed(0)}%
                       </span>
                     </div>
                     <div className="flex gap-1 mt-1 flex-wrap">
@@ -264,8 +321,9 @@ export const LiveAudioAnalyzer: React.FC = () => {
                         </span>
                       ))}
                     </div>
-                  </div>
-                ))}
+                  </button>
+                  );
+                })}
               </div>
             );
           })()}
@@ -275,7 +333,7 @@ export const LiveAudioAnalyzer: React.FC = () => {
         <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4">
           <div className="flex items-center gap-2 mb-3">
             <Music className="w-4 h-4 text-emerald-500" />
-            <span className="text-xs text-slate-400 uppercase tracking-wide font-medium">Key Detection (Krumhansl-Schmuckler)</span>
+            <span className="text-xs text-slate-400 uppercase tracking-wide font-medium">Key Center Detection</span>
           </div>
           {(() => {
             const entries = Object.entries(audioState.keyHistogram) as [string, number][];
@@ -296,28 +354,39 @@ export const LiveAudioAnalyzer: React.FC = () => {
                   const percentage = (count / totalCount) * 100;
                   const isCurrentKey = key === audioState.detectedKey;
                   const barWidth = (count / maxCount) * 100;
+                  const isConstrained = keyConstraintRoot === (key as NoteName);
                   
                   return (
-                    <div key={key} className="flex items-center gap-2">
+                    <button
+                      key={key}
+                      type="button"
+                      onClick={() => {
+                        if (!onSelectKeyConstraint) return;
+                        onSelectKeyConstraint(isConstrained ? null : (key as NoteName));
+                      }}
+                      className={`flex items-center gap-2 w-full text-left ${
+                        onSelectKeyConstraint ? 'cursor-pointer' : 'cursor-default'
+                      }`}
+                    >
                       <span className={`w-20 text-xs font-medium truncate ${
-                        isCurrentKey ? 'text-emerald-400' : 'text-slate-300'
+                        isConstrained ? 'text-gold-300' : isCurrentKey ? 'text-emerald-400' : 'text-slate-300'
                       }`}>
                         {key}
                       </span>
                       <div className="flex-1 h-3 bg-slate-700 rounded overflow-hidden">
                         <div 
                           className={`h-full transition-all duration-300 ${
-                            isCurrentKey ? 'bg-emerald-500' : 'bg-slate-500'
+                            isConstrained ? 'bg-gold-500' : isCurrentKey ? 'bg-emerald-500' : 'bg-slate-500'
                           }`}
                           style={{ width: `${barWidth}%` }}
                         />
                       </div>
                       <span className={`w-12 text-right text-xs font-mono ${
-                        isCurrentKey ? 'text-emerald-400' : 'text-slate-400'
+                        isConstrained ? 'text-gold-300' : isCurrentKey ? 'text-emerald-400' : 'text-slate-400'
                       }`}>
                         {percentage.toFixed(0)}%
                       </span>
-                    </div>
+                    </button>
                   );
                 })}
               </div>

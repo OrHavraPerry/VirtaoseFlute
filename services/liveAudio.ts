@@ -4,8 +4,7 @@
  * using GPU-accelerated processing and note occurrence analysis
  */
 
-import { NoteName, ScaleType } from '../types';
-import { NOTES_ORDER } from '../constants';
+import { SCALE_INTERVALS } from '../constants';
 
 // --- Configuration ---
 const SAMPLE_RATE = 44100; // Higher sample rate for better accuracy
@@ -20,20 +19,10 @@ const MAJOR_PROFILE_RAW = [6.35, 2.23, 3.48, 2.33, 4.38, 4.09, 2.52, 5.19, 2.39,
 const MINOR_PROFILE_RAW = [6.33, 2.68, 3.52, 5.38, 2.60, 3.53, 2.54, 4.75, 3.98, 2.69, 3.34, 3.17];
 
 // Scale patterns (intervals from root)
-const SCALE_PATTERNS: Record<string, number[]> = {
-  'Major': [0, 2, 4, 5, 7, 9, 11],
-  'Minor': [0, 2, 3, 5, 7, 8, 10],
-  'Harmonic Minor': [0, 2, 3, 5, 7, 8, 11],
-  'Melodic Minor': [0, 2, 3, 5, 7, 9, 11],
-  'Pentatonic Major': [0, 2, 4, 7, 9],
-  'Pentatonic Minor': [0, 3, 5, 7, 10],
-  'Blues': [0, 3, 5, 6, 7, 10],
-  'Dorian': [0, 2, 3, 5, 7, 9, 10],
-  'Phrygian': [0, 1, 3, 5, 7, 8, 10],
-  'Lydian': [0, 2, 4, 6, 7, 9, 11],
-  'Mixolydian': [0, 2, 4, 5, 7, 9, 10],
-  'Locrian': [0, 1, 3, 5, 6, 8, 10],
-};
+// Keep in sync with the Scale dropdown by deriving from SCALE_INTERVALS.
+const SCALE_PATTERNS: Record<string, number[]> = Object.fromEntries(
+  Object.entries(SCALE_INTERVALS).map(([scaleType, intervals]) => [scaleType, intervals as number[]])
+) as Record<string, number[]>;
 
 function normalizeProfile(profile: number[]): number[] {
   const mean = profile.reduce((a, b) => a + b, 0) / profile.length;
@@ -64,6 +53,15 @@ export interface InterpolatedScale {
   confidence: number;
   matchedNotes: string[];
   missingNotes: string[];
+  stats: {
+    totalWeight: number;
+    inScaleWeight: number;
+    outOfScaleWeight: number;
+    purity: number;
+    coverage: number;
+    scaleSize: number;
+    sizePenalty: number;
+  };
 }
 
 export interface LiveAudioState {
@@ -226,6 +224,8 @@ class LiveAudioService {
   
   // Key histogram tracking
   private keyHistogram: Record<string, number> = {};
+
+  private interpolationKeyConstraint: string | null = null;
   
   // NEW: Note occurrence tracking
   private noteOccurrences: Record<string, number> = {};
@@ -268,6 +268,10 @@ class LiveAudioService {
     return () => {
       this.listeners = this.listeners.filter(l => l !== listener);
     };
+  }
+
+  public setInterpolationKeyConstraint(root: string | null): void {
+    this.interpolationKeyConstraint = root;
   }
 
   private notifyListeners() {
@@ -485,17 +489,20 @@ class LiveAudioService {
       }
     }
 
-    // Detect key from averaged chroma
-    const { key, confidence } = this.detectKey();
+    // Compute note competence scores
+    const noteCompetence = this.computeNoteCompetence();
+
+    // Detect key from averaged chroma (with dominant-note prior)
+    const { key, confidence } = this.detectKey(noteCompetence);
 
     // Update key histogram
     if (key && confidence > 0.3 && volume > 0.01) {
       this.keyHistogram[key] = (this.keyHistogram[key] || 0) + 1;
     }
 
-    // Compute note competence scores and interpolate scales
-    const noteCompetence = this.computeNoteCompetence();
-    const interpolatedScales = this.interpolateScales();
+    // Interpolate scales
+    const rootForInterpolation = this.interpolationKeyConstraint || key;
+    const interpolatedScales = this.interpolateScales(noteCompetence, rootForInterpolation);
     const recentNotes = this.noteHistory.slice(-20).map(n => n.noteBase);
 
     this.currentState = {
@@ -587,14 +594,46 @@ class LiveAudioService {
   /**
    * Interpolate the most likely scales from detected notes
    */
-  private interpolateScales(): InterpolatedScale[] {
+  private interpolateScales(noteCompetence: Record<string, number>, rootConstraint: string | null): InterpolatedScale[] {
     const detectedNotes = Object.keys(this.noteOccurrences);
     if (detectedNotes.length < 3) return [];
 
     const results: InterpolatedScale[] = [];
 
+    const evidence: Record<string, { count: number; totalDuration: number; avgConfidence: number }> = {};
+    for (const note of this.noteHistory) {
+      if (!evidence[note.noteBase]) {
+        evidence[note.noteBase] = { count: 0, totalDuration: 0, avgConfidence: 0 };
+      }
+      evidence[note.noteBase].count++;
+      evidence[note.noteBase].totalDuration += note.duration;
+      evidence[note.noteBase].avgConfidence += note.confidence;
+    }
+
+    const maxDuration = Math.max(...Object.values(evidence).map(e => e.totalDuration), 1);
+    const weightByNote: Record<string, number> = {};
+    for (const note of detectedNotes) {
+      const e = evidence[note];
+      const avgConfidence = e && e.count > 0 ? e.avgConfidence / e.count : 0;
+      const durationNorm = e ? e.totalDuration / maxDuration : 0;
+      const competence = Math.max(0, Math.min(1, noteCompetence[note] ?? 0));
+      const occurrenceCount = this.noteOccurrences[note] ?? 0;
+
+      const confidenceFactor = 0.2 + 0.8 * Math.max(0, Math.min(1, avgConfidence));
+      const durationFactor = 0.2 + 0.8 * Math.max(0, Math.min(1, durationNorm));
+      const competenceFactor = 0.2 + 0.8 * competence;
+
+      weightByNote[note] = occurrenceCount * confidenceFactor * durationFactor * competenceFactor;
+    }
+
+    const totalWeight = Object.values(weightByNote).reduce((a, b) => a + b, 0);
+    if (totalWeight <= 0) return [];
+
+    const constrainedRootIdx = rootConstraint ? KEY_NAMES.indexOf(rootConstraint) : -1;
+    const rootIndices = constrainedRootIdx >= 0 ? [constrainedRootIdx] : [...Array(12).keys()];
+
     // Test each possible root and scale type
-    for (let rootIdx = 0; rootIdx < 12; rootIdx++) {
+    for (const rootIdx of rootIndices) {
       const root = KEY_NAMES[rootIdx];
 
       for (const [scaleType, pattern] of Object.entries(SCALE_PATTERNS)) {
@@ -604,15 +643,12 @@ class LiveAudioService {
         // Count matches and misses
         const matchedNotes: string[] = [];
         const missingNotes: string[] = [];
-        let matchScore = 0;
-        let outOfScaleCount = 0;
+        let inScaleWeight = 0;
 
         for (const note of detectedNotes) {
           if (scaleNotes.includes(note)) {
             matchedNotes.push(note);
-            matchScore += this.noteOccurrences[note] || 0;
-          } else {
-            outOfScaleCount += this.noteOccurrences[note] || 0;
+            inScaleWeight += weightByNote[note] || 0;
           }
         }
 
@@ -622,24 +658,31 @@ class LiveAudioService {
           }
         }
 
-        // Calculate confidence based on:
-        // - How many detected notes are in the scale
-        // - How few detected notes are outside the scale
-        // - How complete the scale coverage is
-        const totalOccurrences = Object.values(this.noteOccurrences).reduce((a, b) => a + b, 0);
-        const inScaleRatio = totalOccurrences > 0 ? matchScore / totalOccurrences : 0;
-        const coverageRatio = matchedNotes.length / scaleNotes.length;
-        const penaltyRatio = totalOccurrences > 0 ? 1 - (outOfScaleCount / totalOccurrences) : 1;
+        const outOfScaleWeight = Math.max(0, totalWeight - inScaleWeight);
+        const purity = totalWeight > 0 ? inScaleWeight / totalWeight : 0;
+        const coverage = matchedNotes.length / Math.max(1, scaleNotes.length);
 
-        const confidence = (inScaleRatio * 0.4 + coverageRatio * 0.3 + penaltyRatio * 0.3);
+        const scaleSize = scaleNotes.length;
+        const sizePenalty = scaleSize > 7 ? (7 / scaleSize) : 1;
 
-        if (confidence > 0.3 && matchedNotes.length >= 3) {
+        const confidence = (0.7 * purity + 0.3 * coverage) * sizePenalty;
+
+        if (confidence > 0.35 && matchedNotes.length >= 3) {
           results.push({
             root,
             type: scaleType,
             confidence,
             matchedNotes,
             missingNotes,
+            stats: {
+              totalWeight,
+              inScaleWeight,
+              outOfScaleWeight,
+              purity,
+              coverage,
+              scaleSize,
+              sizePenalty,
+            },
           });
         }
       }
@@ -902,7 +945,53 @@ class LiveAudioService {
   /**
    * Detect musical key using Krumhansl-Schmuckler algorithm
    */
-  private detectKey(): { key: string | null; confidence: number } {
+  private estimateDominantPitchClass(noteCompetence: Record<string, number>): { pitchClass: number | null; strength: number } {
+    if (this.noteHistory.length < 3) {
+      return { pitchClass: null, strength: 0 };
+    }
+
+    const now = performance.now();
+    const WINDOW_MS = 15000;
+    const HALF_LIFE_MS = 6000;
+
+    const weights = new Array(12).fill(0);
+    let total = 0;
+
+    for (const occ of this.noteHistory) {
+      const age = now - occ.timestamp;
+      if (age < 0) continue;
+      if (age > WINDOW_MS) continue;
+
+      const decay = Math.pow(0.5, age / HALF_LIFE_MS);
+      const competence = Math.max(0, Math.min(1, noteCompetence[occ.noteBase] ?? 0));
+      const confidenceFactor = 0.2 + 0.8 * Math.max(0, Math.min(1, occ.confidence));
+      const competenceFactor = 0.2 + 0.8 * competence;
+      const durationSeconds = Math.max(0, occ.duration) / 1000;
+      const durationFactor = Math.min(2.5, durationSeconds);
+
+      const w = decay * confidenceFactor * competenceFactor * durationFactor;
+      weights[occ.pitchClass] += w;
+      total += w;
+    }
+
+    if (total <= 1e-6) {
+      return { pitchClass: null, strength: 0 };
+    }
+
+    let bestIdx = 0;
+    for (let i = 1; i < 12; i++) {
+      if (weights[i] > weights[bestIdx]) bestIdx = i;
+    }
+
+    const strength = weights[bestIdx] / total;
+    if (strength < 0.22) {
+      return { pitchClass: null, strength };
+    }
+
+    return { pitchClass: bestIdx, strength };
+  }
+
+  private detectKey(noteCompetence: Record<string, number>): { key: string | null; confidence: number } {
     if (this.chromaHistory.length < 3) {
       return { key: null, confidence: 0 };
     }
@@ -928,8 +1017,12 @@ class LiveAudioService {
 
     const normalizedChroma = avgChroma.map(v => (v - mean) / std);
 
-    let maxCorr = -Infinity;
+    const { pitchClass: dominantPc, strength: dominantStrength } = this.estimateDominantPitchClass(noteCompetence);
+    const ROOT_PRIOR_WEIGHT = 0.22;
+
+    let maxScore = -Infinity;
     let bestKey: string | null = null;
+    let bestRawCorr = -Infinity;
 
     // Test all 24 major/minor keys
     for (let i = 0; i < 12; i++) {
@@ -941,24 +1034,33 @@ class LiveAudioService {
       const corrMajor = this.pearsonCorrelation(normalizedChroma, rotatedMajor);
       const corrMinor = this.pearsonCorrelation(normalizedChroma, rotatedMinor);
 
-      if (corrMajor > maxCorr) {
-        maxCorr = corrMajor;
-        bestKey = `${KEY_NAMES[i]} Major`;
+      const rootPrior = dominantPc !== null && i === dominantPc ? dominantStrength : 0;
+
+      const scoreMajor = corrMajor + ROOT_PRIOR_WEIGHT * rootPrior;
+      const scoreMinor = corrMinor + ROOT_PRIOR_WEIGHT * rootPrior;
+
+      if (scoreMajor > maxScore) {
+        maxScore = scoreMajor;
+        bestRawCorr = corrMajor;
+        bestKey = `${KEY_NAMES[i]}`;
       }
 
-      if (corrMinor > maxCorr) {
-        maxCorr = corrMinor;
-        bestKey = `${KEY_NAMES[i]} Minor`;
+      if (scoreMinor > maxScore) {
+        maxScore = scoreMinor;
+        bestRawCorr = corrMinor;
+        bestKey = `${KEY_NAMES[i]}`;
       }
     }
 
     // If correlation is too weak, treat as "no reliable key"
-    if (maxCorr < 0.35 || !bestKey) {
+    if ((bestRawCorr < 0.33 && dominantStrength < 0.35) || !bestKey) {
       return { key: null, confidence: 0 };
     }
 
-    // Map correlation to a 0..1 confidence range with a floor threshold
-    const confidence = Math.max(0, Math.min(1, (maxCorr - 0.35) / 0.65));
+    // Map score to a 0..1 confidence range with a floor threshold
+    const base = Math.max(0, Math.min(1, (maxScore - 0.33) / 0.67));
+    const tonicBoost = dominantPc !== null ? (0.75 + 0.25 * dominantStrength) : 1;
+    const confidence = Math.max(0, Math.min(1, base * tonicBoost));
 
     return { key: bestKey, confidence };
   }

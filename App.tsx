@@ -12,6 +12,7 @@ import { liveAudioService } from './services/liveAudio';
 
 const App: React.FC = () => {
   const [root, setRoot] = useState<NoteName>(NoteName.C);
+  const [keyConstraint, setKeyConstraint] = useState<NoteName | null>(null);
   const [scaleType, setScaleType] = useState<ScaleType>(ScaleType.Major);
   const [progression, setProgression] = useState<ProgressionType>(ProgressionType.Classic);
   const [rhythm, setRhythm] = useState<RhythmType>(RhythmType.Standard);
@@ -194,7 +195,10 @@ const App: React.FC = () => {
                     {Object.values(NoteName).map((n) => (
                         <button
                         key={n}
-                        onClick={() => setRoot(n)}
+                        onClick={() => {
+                          setRoot(n);
+                          setKeyConstraint(n);
+                        }}
                         className={`
                             px-4 py-2 rounded-md border text-sm font-bold transition-all duration-200 flex-1 min-w-[3rem]
                             ${root === n 
@@ -318,7 +322,20 @@ const App: React.FC = () => {
         </section>
 
         {/* LIVE AUDIO ANALYSIS SECTION */}
-        <LiveAudioAnalyzer />
+        <LiveAudioAnalyzer
+          selectedRoot={root}
+          selectedScaleType={scaleType}
+          onSelectScale={(nextRoot, nextScaleType) => {
+            setRoot(nextRoot);
+            setScaleType(nextScaleType);
+            setKeyConstraint(nextRoot);
+          }}
+          keyConstraintRoot={keyConstraint}
+          onSelectKeyConstraint={(next) => {
+            setKeyConstraint(next);
+            if (next) setRoot(next);
+          }}
+        />
 
         {/* 2. SCALE HARMONY SECTION */}
         <section className="bg-slate-900 border border-slate-800 rounded-xl p-3 shadow-lg">
